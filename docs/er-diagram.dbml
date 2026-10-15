@@ -1,0 +1,104 @@
+// Paste this into https://dbdiagram.io/d (Import -> DBML) to get the ER diagram.
+
+Table app_user {
+  user_id serial [pk]
+  name varchar(100) [not null]
+  email varchar(150) [unique, not null]
+  password_hash varchar(100) [not null]
+  tax_id varchar(20)
+  country char(2) [not null, default: 'IN']
+  role varchar(10) [not null, note: "user | admin | auditor"]
+  cost_method varchar(4) [not null, note: "FIFO | LIFO | WAVG"]
+  created_at timestamptz
+}
+
+Table wallet_exchange {
+  wallet_id serial [pk]
+  user_id int [not null, ref: > app_user.user_id]
+  platform_name varchar(60) [not null]
+  wallet_type varchar(10) [not null, note: "exchange | hot | cold"]
+  created_at timestamptz
+  indexes { (user_id, platform_name) [unique] }
+}
+
+Table asset {
+  asset_id serial [pk]
+  symbol varchar(12) [unique, not null]
+  name varchar(80) [not null]
+  asset_type varchar(12) [not null]
+}
+
+Table txn {
+  txn_id bigserial [pk]
+  wallet_id int [not null, ref: > wallet_exchange.wallet_id]
+  asset_id int [not null, ref: > asset.asset_id]
+  txn_type varchar(12) [not null, note: "BUY|SELL|TRANSFER_IN|TRANSFER_OUT|SWAP_IN|SWAP_OUT"]
+  quantity numeric(28,10) [not null, note: "> 0"]
+  price_per_unit numeric(20,8) [not null]
+  fees numeric(20,8) [not null]
+  txn_time timestamptz [not null]
+  linked_txn_id bigint [ref: > txn.txn_id]
+  import_ref varchar(40) [note: "MongoDB raw_imports id"]
+  notes varchar(200)
+}
+
+Table tax_lot {
+  lot_id bigserial [pk]
+  txn_id bigint [unique, not null, ref: - txn.txn_id]
+  user_id int [not null, ref: > app_user.user_id]
+  asset_id int [not null, ref: > asset.asset_id]
+  acquired_at timestamptz [not null]
+  original_qty numeric(28,10) [not null]
+  remaining_qty numeric(28,10) [not null]
+  unit_cost numeric(20,8) [not null]
+}
+
+Table lot_disposal {
+  disposal_id bigserial [pk]
+  sell_txn_id bigint [not null, ref: > txn.txn_id]
+  lot_id bigint [not null, ref: > tax_lot.lot_id]
+  qty_consumed numeric(28,10) [not null]
+  proceeds numeric(24,8) [not null]
+  cost_basis numeric(24,8) [not null]
+  gain numeric(24,8) [not null]
+  term varchar(5) [not null, note: "SHORT | LONG"]
+  disposed_at timestamptz [not null]
+}
+
+Table price_history {
+  asset_id int [not null, ref: > asset.asset_id]
+  price_date date [not null]
+  closing_price numeric(20,8) [not null]
+  indexes { (asset_id, price_date) [pk] }
+}
+
+Table tax_rule {
+  rule_id serial [pk]
+  country char(2) [not null]
+  financial_year varchar(7) [not null]
+  term varchar(5) [not null]
+  long_term_days int [not null]
+  rate numeric(5,2) [not null]
+  description varchar(200)
+  indexes { (country, financial_year, term) [unique] }
+}
+
+Table holding {
+  user_id int [not null, ref: > app_user.user_id]
+  asset_id int [not null, ref: > asset.asset_id]
+  quantity numeric(28,10) [not null]
+  avg_cost_basis numeric(20,8) [not null]
+  updated_at timestamptz
+  indexes { (user_id, asset_id) [pk] }
+}
+
+Table tax_report {
+  report_id serial [pk]
+  user_id int [not null, ref: > app_user.user_id]
+  financial_year varchar(7) [not null]
+  short_term_gain numeric(24,8)
+  long_term_gain numeric(24,8)
+  tax_payable numeric(24,8)
+  generated_at timestamptz
+  indexes { (user_id, financial_year) [unique] }
+}
