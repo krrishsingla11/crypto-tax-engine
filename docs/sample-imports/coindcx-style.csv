@@ -1,0 +1,5 @@
+Trade Time,Side,Market,Qty,Rate,Commission
+23/10/2026 10:30,buy,SOL/INR,12,14100,169.2
+24/10/2026 12:00,Buy,MATIC-INR,500,67,33.5
+25/10/2026 09:45,sell,SOLINR,5,14400,72
+not-a-date,buy,BTC/INR,0.01,8800000,10

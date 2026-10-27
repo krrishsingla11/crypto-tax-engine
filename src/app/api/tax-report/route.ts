@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { pool } from "@/lib/pg";
 import { json, targetUserId, withAuth } from "@/lib/api";
+import { logAudit } from "@/lib/audit";
 
 export const GET = withAuth("any", async (req, _ctx, s) => {
   const { rows } = await pool.query(
@@ -17,5 +18,6 @@ const Body = z.object({ financialYear: z.string().regex(/^\d{4}-\d{2}$/, "use fo
 export const POST = withAuth(["user"], async (req, _ctx, s) => {
   const b = Body.parse(await req.json());
   const { rows } = await pool.query(`SELECT * FROM generate_tax_report($1, $2)`, [s.userId, b.financialYear]);
+  await logAudit({ userId: s.userId, role: s.role, action: "TAX_REPORT", entity: "tax_report", entityId: rows[0].report_id, details: { financialYear: b.financialYear, taxPayable: rows[0].tax_payable } });
   return json({ report: rows[0] }, 201);
 });

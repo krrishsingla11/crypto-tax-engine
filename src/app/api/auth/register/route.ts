@@ -2,6 +2,7 @@ import { z } from "zod";
 import { pool } from "@/lib/pg";
 import { createSession, hashPassword } from "@/lib/auth";
 import { json, publicRoute } from "@/lib/api";
+import { logAudit } from "@/lib/audit";
 
 const Body = z.object({
   name: z.string().trim().min(1).max(100),
@@ -24,5 +25,6 @@ export const POST = publicRoute(async (req) => {
   );
   const u = rows[0];
   await createSession({ userId: u.user_id, role: u.role, name: u.name });
+  await logAudit({ userId: u.user_id, role: u.role, action: "REGISTER", entity: "app_user", entityId: u.user_id });
   return json({ user: u }, 201);
 });

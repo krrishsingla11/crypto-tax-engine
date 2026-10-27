@@ -1,5 +1,6 @@
 import { pool } from "@/lib/pg";
 import { fail, json, withAuth } from "@/lib/api";
+import { logAudit } from "@/lib/audit";
 
 // Deleting rolls lots/holdings back via DB triggers (blocked if units from a BUY were already sold).
 export const DELETE = withAuth(["user"], async (_req, ctx, s) => {
@@ -11,5 +12,6 @@ export const DELETE = withAuth(["user"], async (_req, ctx, s) => {
     [Number(id), s.userId],
   );
   if (!rowCount) return fail("Transaction not found", 404);
+  await logAudit({ userId: s.userId, role: s.role, action: "TXN_DELETE", entity: "txn", entityId: id });
   return json({ ok: true });
 });

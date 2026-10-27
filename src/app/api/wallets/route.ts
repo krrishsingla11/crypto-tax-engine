@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { pool } from "@/lib/pg";
 import { json, targetUserId, withAuth } from "@/lib/api";
+import { logAudit } from "@/lib/audit";
 
 export const GET = withAuth("any", async (req, _ctx, s) => {
   const { rows } = await pool.query(
@@ -23,5 +24,6 @@ export const POST = withAuth(["user"], async (req, _ctx, s) => {
      VALUES ($1, $2, $3) RETURNING wallet_id, platform_name, wallet_type`,
     [s.userId, b.platformName, b.walletType],
   );
+  await logAudit({ userId: s.userId, role: s.role, action: "WALLET_CREATE", entity: "wallet_exchange", entityId: rows[0].wallet_id, details: { platform: b.platformName } });
   return json({ wallet: rows[0] }, 201);
 });

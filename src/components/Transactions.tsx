@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { api, useFetch } from "@/lib/client";
+import ImportPanel from "@/components/ImportPanel";
 import { dateTime, money, qty } from "@/lib/format";
 
 type Wallet = { wallet_id: number; platform_name: string; wallet_type: string };
@@ -50,6 +51,7 @@ export default function Transactions({ role }: { role: "user" | "admin" | "audit
   const [viewDraft, setViewDraft] = useState("");
   const [viewUser, setViewUser] = useState("");
   const [showForm, setShowForm] = useState(false);
+  const [showImport, setShowImport] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -142,15 +144,28 @@ export default function Transactions({ role }: { role: "user" | "admin" | "audit
             </form>
           )}
           {canEdit && (
-            <button onClick={() => setShowForm((v) => !v)} className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700">
-              {showForm ? "Close" : "+ Add transaction"}
-            </button>
+            <>
+              <button onClick={() => setShowImport((v) => !v)} className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                {showImport ? "Close import" : "Import CSV"}
+              </button>
+              <button onClick={() => setShowForm((v) => !v)} className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700">
+                {showForm ? "Close" : "+ Add transaction"}
+              </button>
+            </>
           )}
         </div>
       </div>
 
       {msg && (
         <p className={`rounded-md px-3 py-2 text-sm ${msg.ok ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}>{msg.text}</p>
+      )}
+
+      {canEdit && showImport && (
+        walletList.length === 0 ? (
+          <p className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">Add an exchange / wallet first (use + Add transaction).</p>
+        ) : (
+          <ImportPanel wallets={walletList} onDone={() => { setPage(1); txns.reload(); }} />
+        )
       )}
 
       {canEdit && showForm && (

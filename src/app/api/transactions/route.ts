@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { pool } from "@/lib/pg";
 import { decimalString, fail, json, targetUserId, withAuth } from "@/lib/api";
+import { logAudit } from "@/lib/audit";
 
 // ---- list with filters + paging ------------------------------------------
 export const GET = withAuth("any", async (req, _ctx, s) => {
@@ -65,5 +66,6 @@ export const POST = withAuth(["user"], async (req, _ctx, s) => {
     [b.walletId, b.symbol, b.txnType, b.quantity, b.pricePerUnit, b.fees, b.txnTime, b.notes ?? null],
   );
   if (!rows.length) return fail(`Unknown asset ${b.symbol}`, 400);
+  await logAudit({ userId: s.userId, role: s.role, action: "TXN_CREATE", entity: "txn", entityId: String(rows[0].txn_id), details: { type: b.txnType, symbol: b.symbol, quantity: b.quantity } });
   return json({ transaction: rows[0] }, 201);
 });

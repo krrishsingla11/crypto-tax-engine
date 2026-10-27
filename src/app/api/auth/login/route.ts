@@ -2,6 +2,7 @@ import { z } from "zod";
 import { pool } from "@/lib/pg";
 import { createSession, verifyPassword } from "@/lib/auth";
 import { fail, json, publicRoute } from "@/lib/api";
+import { logAudit } from "@/lib/audit";
 
 const Body = z.object({
   email: z.string().trim().toLowerCase().email(),
@@ -17,9 +18,11 @@ export const POST = publicRoute(async (req) => {
   const u = rows[0];
   // same message for unknown email and wrong password
   if (!u || !(await verifyPassword(b.password, u.password_hash))) {
+    await logAudit({ userId: u?.user_id ?? null, action: "LOGIN_FAILED", entity: "app_user", details: { email: b.email } });
     return fail("Invalid email or password", 401);
   }
   await createSession({ userId: u.user_id, role: u.role, name: u.name });
+  await logAudit({ userId: u.user_id, role: u.role, action: "LOGIN", entity: "app_user", entityId: u.user_id });
   const { password_hash: _omit, ...user } = u;
   return json({ user });
 });
