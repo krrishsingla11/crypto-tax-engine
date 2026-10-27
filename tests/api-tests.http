@@ -1,0 +1,50 @@
+### Use with the VS Code "REST Client" extension (or copy into Postman / Thunder Client)
+@host = http://localhost:3000/api
+
+### login (krrish@demo.dev / User@123)
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{"email":"krrish@demo.dev","password":"User@123"}
+
+### me
+GET {{host}}/auth/me
+
+### wallets
+GET {{host}}/wallets
+
+### portfolio
+GET {{host}}/portfolio
+
+### add a BUY (set walletId from /wallets)
+POST {{host}}/transactions
+Content-Type: application/json
+
+{"walletId":3,"symbol":"BTC","txnType":"BUY","quantity":"0.01","pricePerUnit":"8700000","fees":"10","txnTime":"2026-10-14T10:00:00+05:30"}
+
+### oversell -> 400
+POST {{host}}/transactions
+Content-Type: application/json
+
+{"walletId":3,"symbol":"BTC","txnType":"SELL","quantity":"50","pricePerUnit":"8700000","txnTime":"2026-10-14T10:00:00+05:30"}
+
+### filtered list
+GET {{host}}/transactions?symbol=BTC&type=SELL
+
+### generate tax report
+POST {{host}}/tax-report
+Content-Type: application/json
+
+{"financialYear":"2026-27"}
+
+### report detail
+GET {{host}}/tax-report/2026-27
+
+### asset search
+GET {{host}}/assets?q=bit
+
+### admin-only (login as admin first) -> 403 for normal users
+POST {{host}}/assets
+Content-Type: application/json
+
+{"symbol":"DOGE","name":"Dogecoin"}
