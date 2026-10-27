@@ -10,6 +10,7 @@ const LINKS: { href: string; label: string; roles: Role[] }[] = [
   { href: "/dashboard", label: "Dashboard", roles: ["user", "admin", "auditor"] },
   { href: "/transactions", label: "Transactions", roles: ["user", "admin", "auditor"] },
   { href: "/tax-report", label: "Tax report", roles: ["user", "admin", "auditor"] },
+  { href: "/admin", label: "Admin", roles: ["admin"] },
 ];
 
 export default function Navbar({ name, role }: { name: string; role: Role }) {

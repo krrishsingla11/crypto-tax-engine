@@ -55,6 +55,7 @@ export default function TaxReport({ role }: { role: "user" | "admin" | "auditor"
   const uq = viewUser ? `?userId=${encodeURIComponent(viewUser)}` : "";
 
   const rules = useFetch<{ country: string; rules: Rule[] }>("/api/tax-rules");
+  const me = useFetch<{ user: { cost_method: "FIFO" | "LIFO" | "WAVG" } }>("/api/auth/me");
   const list = useFetch<{ reports: Report[] }>(`/api/tax-report${uq}`);
 
   const years = useMemo(() => {
@@ -80,6 +81,18 @@ export default function TaxReport({ role }: { role: "user" | "admin" | "auditor"
     });
     return [...m.entries()].sort((a, b) => b[1].gain - a[1].gain);
   }, [detail.data]);
+
+  async function changeMethod(costMethod: string) {
+    setMsg(null);
+    try {
+      await api("/api/auth/me", { method: "PATCH", body: JSON.stringify({ costMethod }) });
+      setMsg({ ok: true, text: `Cost-basis method set to ${costMethod}. It applies to sales you record from now on.` });
+    } catch (e) {
+      setMsg({ ok: false, text: (e as Error).message });
+    } finally {
+      me.reload();
+    }
+  }
 
   async function generate() {
     setBusy(true);
@@ -122,6 +135,15 @@ export default function TaxReport({ role }: { role: "user" | "admin" | "auditor"
               {years.map((y) => <option key={y}>{y}</option>)}
             </select>
           </div>
+          {canGenerate && me.data && (
+            <div className="flex items-center gap-2 text-sm">
+              <label className="text-slate-600">Cost basis</label>
+              <select value={me.data.user.cost_method} onChange={(e) => changeMethod(e.target.value)}
+                className="rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-sm" title="How a sale is matched to your purchase lots. Applies to future sales.">
+                <option value="FIFO">FIFO</option><option value="LIFO">LIFO</option><option value="WAVG">Weighted avg</option>
+              </select>
+            </div>
+          )}
           {canGenerate && (
             <button onClick={generate} disabled={busy} className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60">
               {busy ? "Calculating…" : r ? "Regenerate" : "Generate report"}
