@@ -8,6 +8,7 @@ type Role = "user" | "admin" | "auditor";
 // Add entries here as pages get built. `roles` controls who sees the link.
 const LINKS: { href: string; label: string; roles: Role[] }[] = [
   { href: "/dashboard", label: "Dashboard", roles: ["user", "admin", "auditor"] },
+  { href: "/transactions", label: "Transactions", roles: ["user", "admin", "auditor"] },
 ];
 
 export default function Navbar({ name, role }: { name: string; role: Role }) {
