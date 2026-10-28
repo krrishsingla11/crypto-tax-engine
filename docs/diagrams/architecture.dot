@@ -1,0 +1,34 @@
+digraph ARCH {
+  graph [rankdir=LR, fontname="Helvetica", nodesep=0.35, ranksep=0.9, pad=0.4, bgcolor="white", label="System architecture", labelloc=t, fontsize=20, compound=true];
+  node  [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=11, fillcolor="#f8fafc", color="#94a3b8"];
+  edge  [fontname="Helvetica", fontsize=9, color="#475569"];
+
+  user  [label="Browser\n(User / Admin / Auditor)", fillcolor="#e0e7ff", color="#4f46e5"];
+
+  subgraph cluster_next {
+    label="Next.js 16 application"; style="rounded"; color="#4f46e5"; fontsize=12;
+    pages [label="Pages (React, Tailwind)\nlogin / register\ndashboard\ntransactions\ntax report\nadmin\naudit & analytics"];
+    api   [label="Route Handlers (API layer)\n/api/auth  /api/wallets\n/api/transactions (+ import)\n/api/portfolio  /api/tax-report\n/api/admin/*  /api/analytics\n/api/audit-logs"];
+    auth  [label="Auth & access control\nbcrypt password hashes\nJWT in httpOnly cookie\nrole check per route\nzod input validation\nparameterised SQL", fillcolor="#fef3c7", color="#f59e0b"];
+    pages -> api [label="fetch (JSON)"];
+    api -> auth [dir=both, style=dashed];
+  }
+
+  subgraph cluster_pg {
+    label="PostgreSQL (relational, ACID)"; style="rounded"; color="#10b981"; fontsize=12;
+    tables [label="10 tables\nkeys, CHECK, UNIQUE, indexes\n(partial + GIN full-text)"];
+    logic  [label="Triggers + stored procedures\nguard / lot creation / process_sell()\nFIFO LIFO WAVG, generate_tax_report()\nviews, advisory locks, savepoints", fillcolor="#d1fae5", color="#10b981"];
+    tables -> logic [dir=both, style=dashed];
+  }
+
+  subgraph cluster_mongo {
+    label="MongoDB (documents)"; style="rounded"; color="#0ea5e9"; fontsize=12;
+    raw   [label="raw_imports\nexchange CSV rows exactly as exported\nper-row import outcome\n(txn.import_ref points back here)"];
+    audit [label="audit_logs\nappend-only event trail\naggregation pipelines"];
+  }
+
+  user -> pages [label="HTTPS"];
+  api -> tables [label="SQL (pg)", lhead=cluster_pg];
+  api -> raw   [label="driver", lhead=cluster_mongo];
+  api -> audit [label="logAudit()"];
+}

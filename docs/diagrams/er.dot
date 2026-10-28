@@ -1,0 +1,106 @@
+digraph ER {
+  graph [rankdir=LR, fontname="Helvetica", nodesep=0.5, ranksep=1.1, pad=0.4, bgcolor="white", label="Crypto-Asset Portfolio & Tax Engine: ER diagram (PostgreSQL)", labelloc=t, fontsize=20];
+  node  [shape=plain, fontname="Helvetica", fontsize=11];
+  edge  [fontname="Helvetica", fontsize=9, dir=both, arrowtail=tee, arrowhead=crow, color="#475569"];
+
+  app_user [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+    <TR><TD BGCOLOR="#4f46e5"><FONT COLOR="white"><B>app_user</B></FONT></TD></TR>
+    <TR><TD ALIGN="LEFT" PORT="user_id"><B>PK</B> user_id</TD></TR>
+    <TR><TD ALIGN="LEFT">name</TD></TR>
+    <TR><TD ALIGN="LEFT">email (unique)</TD></TR>
+    <TR><TD ALIGN="LEFT">password_hash</TD></TR>
+    <TR><TD ALIGN="LEFT">tax_id, country</TD></TR>
+    <TR><TD ALIGN="LEFT">role (user|admin|auditor)</TD></TR>
+    <TR><TD ALIGN="LEFT">cost_method (FIFO|LIFO|WAVG)</TD></TR>
+  </TABLE>>];
+
+  wallet_exchange [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+    <TR><TD BGCOLOR="#4f46e5"><FONT COLOR="white"><B>wallet_exchange</B></FONT></TD></TR>
+    <TR><TD ALIGN="LEFT"><B>PK</B> wallet_id</TD></TR>
+    <TR><TD ALIGN="LEFT"><B>FK</B> user_id</TD></TR>
+    <TR><TD ALIGN="LEFT">platform_name</TD></TR>
+    <TR><TD ALIGN="LEFT">wallet_type (exchange|hot|cold)</TD></TR>
+  </TABLE>>];
+
+  asset [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+    <TR><TD BGCOLOR="#0ea5e9"><FONT COLOR="white"><B>asset</B></FONT></TD></TR>
+    <TR><TD ALIGN="LEFT"><B>PK</B> asset_id</TD></TR>
+    <TR><TD ALIGN="LEFT">symbol (unique)</TD></TR>
+    <TR><TD ALIGN="LEFT">name, asset_type</TD></TR>
+  </TABLE>>];
+
+  txn [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+    <TR><TD BGCOLOR="#10b981"><FONT COLOR="white"><B>txn</B></FONT></TD></TR>
+    <TR><TD ALIGN="LEFT"><B>PK</B> txn_id</TD></TR>
+    <TR><TD ALIGN="LEFT"><B>FK</B> wallet_id</TD></TR>
+    <TR><TD ALIGN="LEFT"><B>FK</B> asset_id</TD></TR>
+    <TR><TD ALIGN="LEFT"><B>FK</B> linked_txn_id (self)</TD></TR>
+    <TR><TD ALIGN="LEFT">txn_type, quantity &gt; 0</TD></TR>
+    <TR><TD ALIGN="LEFT">price_per_unit, fees, txn_time</TD></TR>
+    <TR><TD ALIGN="LEFT">import_ref (MongoDB id)</TD></TR>
+  </TABLE>>];
+
+  tax_lot [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+    <TR><TD BGCOLOR="#10b981"><FONT COLOR="white"><B>tax_lot</B></FONT></TD></TR>
+    <TR><TD ALIGN="LEFT"><B>PK</B> lot_id</TD></TR>
+    <TR><TD ALIGN="LEFT"><B>FK</B> txn_id (unique)</TD></TR>
+    <TR><TD ALIGN="LEFT"><B>FK</B> user_id, asset_id</TD></TR>
+    <TR><TD ALIGN="LEFT">acquired_at, unit_cost</TD></TR>
+    <TR><TD ALIGN="LEFT">original_qty, remaining_qty</TD></TR>
+  </TABLE>>];
+
+  lot_disposal [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+    <TR><TD BGCOLOR="#10b981"><FONT COLOR="white"><B>lot_disposal</B></FONT></TD></TR>
+    <TR><TD ALIGN="LEFT"><B>PK</B> disposal_id</TD></TR>
+    <TR><TD ALIGN="LEFT"><B>FK</B> sell_txn_id</TD></TR>
+    <TR><TD ALIGN="LEFT"><B>FK</B> lot_id</TD></TR>
+    <TR><TD ALIGN="LEFT">qty_consumed, proceeds</TD></TR>
+    <TR><TD ALIGN="LEFT">cost_basis, gain</TD></TR>
+    <TR><TD ALIGN="LEFT">term (SHORT|LONG), disposed_at</TD></TR>
+  </TABLE>>];
+
+  holding [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+    <TR><TD BGCOLOR="#f59e0b"><FONT COLOR="white"><B>holding</B></FONT></TD></TR>
+    <TR><TD ALIGN="LEFT"><B>PK, FK</B> user_id</TD></TR>
+    <TR><TD ALIGN="LEFT"><B>PK, FK</B> asset_id</TD></TR>
+    <TR><TD ALIGN="LEFT">quantity, avg_cost_basis</TD></TR>
+  </TABLE>>];
+
+  price_history [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+    <TR><TD BGCOLOR="#0ea5e9"><FONT COLOR="white"><B>price_history</B></FONT></TD></TR>
+    <TR><TD ALIGN="LEFT"><B>PK, FK</B> asset_id</TD></TR>
+    <TR><TD ALIGN="LEFT"><B>PK</B> price_date</TD></TR>
+    <TR><TD ALIGN="LEFT">closing_price &gt; 0</TD></TR>
+  </TABLE>>];
+
+  tax_report [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+    <TR><TD BGCOLOR="#f59e0b"><FONT COLOR="white"><B>tax_report</B></FONT></TD></TR>
+    <TR><TD ALIGN="LEFT"><B>PK</B> report_id</TD></TR>
+    <TR><TD ALIGN="LEFT"><B>FK</B> user_id</TD></TR>
+    <TR><TD ALIGN="LEFT">financial_year (unique per user)</TD></TR>
+    <TR><TD ALIGN="LEFT">short_term_gain, long_term_gain</TD></TR>
+    <TR><TD ALIGN="LEFT">tax_payable</TD></TR>
+  </TABLE>>];
+
+  tax_rule [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+    <TR><TD BGCOLOR="#64748b"><FONT COLOR="white"><B>tax_rule</B></FONT></TD></TR>
+    <TR><TD ALIGN="LEFT"><B>PK</B> rule_id</TD></TR>
+    <TR><TD ALIGN="LEFT">country, financial_year, term (unique)</TD></TR>
+    <TR><TD ALIGN="LEFT">rate, long_term_days, description</TD></TR>
+  </TABLE>>];
+
+  app_user -> wallet_exchange [label="owns"];
+  wallet_exchange -> txn [label="records"];
+  asset -> txn [label="is traded in"];
+  txn -> txn [label="pairs (transfer/swap)", arrowtail=crow, arrowhead=tee];
+  txn -> tax_lot [label="a BUY creates", arrowhead=tee];
+  app_user -> tax_lot [label="owns"];
+  asset -> tax_lot;
+  tax_lot -> lot_disposal [label="consumed by"];
+  txn -> lot_disposal [label="a SELL creates"];
+  app_user -> holding [label="has"];
+  asset -> holding;
+  asset -> price_history [label="priced daily"];
+  app_user -> tax_report [label="generates"];
+  tax_rule -> tax_report [style=dashed, arrowhead=none, arrowtail=none, label="rates applied\n(by country, FY, term)"];
+}
